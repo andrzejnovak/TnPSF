@@ -3,8 +3,12 @@
 ### Setup combine and rhalphalib
 Follow official combine instruction or setup with `conda` using [this branch](https://github.com/andrzejnovak/HiggsAnalysis-CombinedLimit/tree/root6.22-compat).
 
-Setup [rhalphalib](https://github.com/nsmith-/rhalphalib)
+Setup [rhalphalib](https://github.com/nsmith-/rhalphalib) and then
 
+```
+git clone https://github.com/andrzejnovak/TnPSF.git
+cd TnPSF
+```
 
 ### Generate variations 
 Assumes 1 root file per category containing matched, unmatched and data templates.
