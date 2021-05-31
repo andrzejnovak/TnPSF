@@ -23,8 +23,8 @@ def get_templ(f, sample, syst=None, sumw2=True):
 
 
 def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}):
-    sys_scale = rl.NuisanceParameter('CMS_scale', 'shape')
-    sys_smear = rl.NuisanceParameter('CMS_smear', 'shape')
+    sys_scale = rl.NuisanceParameter('CMS_scale', 'shapeU')
+    sys_smear = rl.NuisanceParameter('CMS_smear', 'shapeU')
     lumi = rl.NuisanceParameter('CMS_lumi', 'lnN')
     jecs = rl.NuisanceParameter('CMS_jecs', 'lnN')
     pu = rl.NuisanceParameter('CMS_pu', 'lnN')
@@ -33,29 +33,31 @@ def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}):
     effwSF = rl.IndependentParameter('effwSF', 1., -20, 100)
     effwSF2 = rl.IndependentParameter('effwSF_un', 1., -20, 100)
 
-    msdbins = np.linspace(40, 201, 24)
+    msdbins = np.linspace(40, 141.5, 30)
     msd = rl.Observable('msd', msdbins)
     model = rl.Model("sfModel")
+    model.t2w_config = ("-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel  --PO verbose "
+                        "--PO 'map=.*/effSF:effSF[1, 0, 10]'")
 
     if fittype == 'single':
-        regions = ['pass', 'fail']
+        regions = [('single', 'pass'), ('single', 'fail')]
     elif fittype == 'double':
-        regions = ['pass', 'passfail', 'fail']
+        regions = [('primary', 'fail'), ('secondary', 'pass'), ('secondary', 'fail')]
     else:
         raise NotImplementedError
 
-    for region in regions:
-        ch = rl.Channel("wsf{}".format(region))
-        wqq_templ = get_templ(template_dir[region], 'catp2')
+    for template, region in regions:
+        ch = rl.Channel("wsf{}{}".format(template.capitalize(), region.capitalize()))
+        wqq_templ = get_templ(template_dir[template], 'catp2_{}'.format(region), 'nominal')
         wqq_sample = rl.TemplateSample("{}_wqq".format(ch.name), rl.Sample.SIGNAL, wqq_templ)
         wqq_sample.setParamEffect(sys_scale, 
-                                  get_templ(template_dir[region], 'catp2', 'scaleUp', False),
-                                  get_templ(template_dir[region], 'catp2', 'scaleDown', False),
+                                  get_templ(template_dir[template], 'catp2_{}'.format(region), 'scaleUp', False),
+                                  get_templ(template_dir[template], 'catp2_{}'.format(region), 'scaleDown', False),
                                   scale=scale,
                                   )
         wqq_sample.setParamEffect(sys_smear, 
-                                  get_templ(template_dir[region], 'catp2', 'smearUp', False),
-                                  get_templ(template_dir[region], 'catp2', 'smearDown', False),
+                                  get_templ(template_dir[template], 'catp2_{}'.format(region), 'smearUp', False),
+                                  get_templ(template_dir[template], 'catp2_{}'.format(region), 'smearDown', False),
                                   scale=smear,
                                   )
         wqq_sample.setParamEffect(lumi, 1.023)
@@ -64,7 +66,7 @@ def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}):
         wqq_sample.autoMCStats(lnN=True)
         ch.addSample(wqq_sample)
 
-        qcd_templ = get_templ(template_dir[region], 'catp1')
+        qcd_templ = get_templ(template_dir[template], 'catp1_{}'.format(region), 'nominal')
         qcd_sample = rl.TemplateSample("{}_qcd".format(ch.name), rl.Sample.BACKGROUND, qcd_templ)
         qcd_sample.setParamEffect(lumi, 1.023)
         qcd_sample.setParamEffect(jecs, 1.02)
@@ -72,27 +74,24 @@ def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}):
         qcd_sample.autoMCStats(lnN=True)
         ch.addSample(qcd_sample)
 
-        data_obs = get_templ(template_dir[region], 'data_obs')[:-1]
-        #mask = data_obs[0] == 0
-        #print(mask)
-        #ch.mask = mask
+        data_obs = get_templ(template_dir[template], 'data_obs_{}'.format(region), 'nominal')[:-1]
         ch.setObservation(data_obs)
 
         model.addChannel(ch)
 
     if fittype == 'single':
         for sample, SF in zip(['wqq', 'qcd'], [effSF, effSF2]):
-            pass_sample1 = model['wsfpass'][sample]
-            fail_sample = model['wsffail'][sample]
+            pass_sample1 = model['wsfSinglePass'][sample]
+            fail_sample = model['wsfSingleFail'][sample]
             pass_fail = pass_sample1.getExpectation(nominal=True).sum() / fail_sample.getExpectation(nominal=True).sum()
             pass_sample1.setParamEffect(SF, 1.0 * SF)
             fail_sample.setParamEffect(SF, (1 - SF) * pass_fail + 1)
 
     elif fittype == 'double':
         for sample, SF in zip(['wqq', 'qcd'], [effSF, effSF2]):
-            pass_sample1 = model['wsfpass'][sample]
-            pass_sample2 = model['wsfpassfail'][sample]
-            fail_sample = model['wsffail'][sample]
+            pass_sample1 = model['wsfSecondaryPass'][sample]
+            pass_sample2 = model['wsfSecondaryFail'][sample]
+            fail_sample = model['wsfPrimaryFail'][sample]
             pass_fail = (pass_sample1.getExpectation(nominal=True).sum() + 
                          pass_sample2.getExpectation(nominal=True).sum()) / fail_sample.getExpectation(nominal=True).sum()
             pass_sample1.setParamEffect(SF, 1.0 * SF)
@@ -100,13 +99,13 @@ def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}):
             fail_sample.setParamEffect(SF, (1 - SF) * pass_fail + 1)
 
         for sample, SF in zip(['wqq', 'qcd'], [effwSF, effwSF2]):
-            pass_sample = model['wsfpass'][sample]
-            fail_sample = model['wsfpassfail'][sample]
+            pass_sample = model['wsfSecondaryPass'][sample]
+            fail_sample = model['wsfSecondaryFail'][sample]
             pass_fail = pass_sample.getExpectation(nominal=True).sum() / fail_sample.getExpectation(nominal=True).sum()
             pass_sample.setParamEffect(SF, 1.0 * SF)
             fail_sample.setParamEffect(SF, (1 - SF) * pass_fail + 1)
 
-    model.renderCombine('fitdir')
+    model.renderCombine('fit_{}'.format(fittype))
 
 if __name__ == '__main__':
     import argparse
@@ -129,35 +128,30 @@ if __name__ == '__main__':
     parser.add_argument("--smear", type=float, default='0.1',
                         help="Datacard magnitude for smear shift.")
 
-    parser.add_argument("--tp", "--template-pass", dest='tp', type=str, 
-                        #default='templates/wfit_nskim17_n2cvb/wtag_var_pass.root',
-                        default='templates/wfit_nskim17_cvl/wtag_var_pass.root',
+    parser.add_argument("-t", "--t1", "--template", type=str, dest='template1',
+                        default='newbasew17/wtemplates_n2cvb_var.root',
                         help="Pass(Pass/Pass) templates")
 
-    parser.add_argument("--tpf", "--template-passfail", dest='tpf', type=str, 
-                        default='templates/wfit_nskim17_cvl/wtag_var_fail.root',
-                        help="Pass/Fail templates, only for `fit=double`")  
-
-    parser.add_argument("--tf", "--template-fail", dest='tf', type=str, 
-                        default='templates/wfit_nskim17_n2cvb/wtag_var_fail.root',
-                        help="Fail templates")
+    parser.add_argument("--t2", "--template2", type=str,  dest='template2',
+                        default='newbasew17/wtemplates_cvl_var.root',
+                        help="Pass(Pass/Pass) templates")
 
     args = parser.parse_args()
     print("Running with options:")
     print("    ", args)
 
-    if not os.path.exists('fitdir'):
-        os.mkdir('fitdir')
+    if not os.path.exists('fit_{}'.format(args.fit)):
+        os.mkdir('fit_{}'.format(args.fit))
 
     if args.fit == 'single':
-        regions = ['pass', 'fail']
+        regions = ['single']
     elif args.fit == 'double':
-        regions = ['pass', 'passfail', 'fail']
+        regions = ['primary', 'secondary']
     else:
         raise NotImplementedError
 
     templates = {}    
-    for region, path in zip(regions, [args.tp, args.tpf, args.tf,]):
+    for region, path in zip(regions, [args.template1, args.template2]):
         try:
             templates[region] = uproot.open(path)
         except:

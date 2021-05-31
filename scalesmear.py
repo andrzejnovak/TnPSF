@@ -142,51 +142,57 @@ if __name__ == "__main__":
     parser.add_argument('--type', dest='hist_type', type=str, choices=["TH1F", "TH1D"], default="TH1D", help="TH1 type. Should be consistent with input.")
     args = parser.parse_args()
     if args.out_file is None:
-        args.out_file = args.in_file.replace("_pass", "_var_pass").replace("_fail", "_var_fail")
+        args.out_file = args.in_file.replace(".root", "_var.root")
     print("Running with the following options:")
     print(args)
 
     source_file = uproot3.open(args.in_file)
-    work_dir = os.path.dirname(args.in_file)
-
-    morph_base = MorphHistW2(source_file['catp2'])
-
-    scale_up = morph_base.get(shift=args.scale)
-    scale_down = morph_base.get(shift=-args.scale)
-    smear_up = morph_base.get(scale=1+args.smear)
-    smear_down = morph_base.get(scale=1-args.smear)
-
-
-    if args.plot:
-        import matplotlib.pyplot as plt
-        import mplhep as hep
-
-        plt.style.use(hep.style.ROOT)
-        fig, ax = plt.subplots()
-        hep.histplot(morph_base.get()[:2], c='black' , ls=':', label='Nominal')
-        hep.histplot(scale_up[:2], c='blue' , ls='--', label='Up')
-        hep.histplot(scale_down[:2], c='red' , ls='--', label='Down')
-        ax.set_xlabel('jet $m_{SD}$')
-        ax.legend()
-        fig.savefig('{}/scale.png'.format(work_dir))
-
-        fig, ax = plt.subplots()
-        hep.histplot(morph_base.get()[:2], c='black' , ls=':', label='Nominal')
-        hep.histplot(smear_up[:2], c='blue' , ls='--', label='Up')
-        hep.histplot(smear_down[:2], c='red' , ls='--', label='Down')
-        ax.set_xlabel('jet $m_{SD}$')
-        ax.legend()
-        fig.savefig('{}/smear.png'.format(work_dir))
-
     if os.path.exists(args.out_file):
         os.remove(args.out_file)
-        
     fout = uproot3.create(args.out_file)
-    fout['data_obs'] = source_file['data_obs']
-    fout['catp1'] = source_file['catp1']
-    fout['catp2'] = source_file['catp2']
-    fout['catp2_central'] = source_file['catp2']
-    fout['catp2_smearDown'] = export1d(smear_down, histtype=args.hist_type)
-    fout['catp2_smearUp'] = export1d(smear_up, histtype=args.hist_type)
-    fout['catp2_scaleDown'] = export1d(scale_down, histtype=args.hist_type)
-    fout['catp2_scaleUp'] = export1d(scale_up, histtype=args.hist_type)
+
+    work_dir = os.path.dirname(args.in_file)
+
+    # scale catp2 templates
+    for template_name in [k for k in source_file.keys() if 'catp2' in k]:
+        morph_base = MorphHistW2(source_file[template_name])
+
+        scale_up = morph_base.get(shift=args.scale)
+        scale_down = morph_base.get(shift=-args.scale)
+        smear_up = morph_base.get(scale=1+args.smear)
+        smear_down = morph_base.get(scale=1-args.smear)
+
+        if args.plot:
+            import matplotlib.pyplot as plt
+            import mplhep as hep
+
+            plt.style.use(hep.style.ROOT)
+            fig, ax = plt.subplots()
+            hep.histplot(morph_base.get()[:2], c='black' , ls=':', label='Nominal')
+            hep.histplot(scale_up[:2], c='blue' , ls='--', label='Up')
+            hep.histplot(scale_down[:2], c='red' , ls='--', label='Down')
+            ax.set_xlabel('jet $m_{SD}$')
+            ax.legend()
+            fig.savefig('{}/{}_scale.png'.format(work_dir, template_name))
+
+            fig, ax = plt.subplots()
+            hep.histplot(morph_base.get()[:2], c='black' , ls=':', label='Nominal')
+            hep.histplot(smear_up[:2], c='blue' , ls='--', label='Up')
+            hep.histplot(smear_down[:2], c='red' , ls='--', label='Down')
+            ax.set_xlabel('jet $m_{SD}$')
+            ax.legend()
+            fig.savefig('{}/{}_smear.png'.format(work_dir, template_name))
+
+        fout[template_name] = source_file[template_name]
+        fout[template_name.replace("nominal", "smearDown")] = export1d(smear_down, histtype=args.hist_type)
+        fout[template_name.replace("nominal", "smearUp")] = export1d(smear_up, histtype=args.hist_type)
+        fout[template_name.replace("nominal", "scaleDown")] = export1d(scale_down, histtype=args.hist_type)
+        fout[template_name.replace("nominal", "scaleUp")] = export1d(scale_up, histtype=args.hist_type)
+
+        template_name
+
+        # Clone remaining templates:
+        for template_name in [k for k in source_file.keys() if 'catp2' not in k]:
+            fout[template_name] = source_file[template_name]
+
+    fout.close()
