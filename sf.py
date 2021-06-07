@@ -22,7 +22,7 @@ def get_templ(f, sample, syst=None, sumw2=True):
         return (h_vals, h_edges, h_key, h_variances)
 
 
-def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}):
+def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}, fit_dir=None):
     sys_scale = rl.NuisanceParameter('CMS_scale', 'shapeU')
     sys_smear = rl.NuisanceParameter('CMS_smear', 'shapeU')
     lumi = rl.NuisanceParameter('CMS_lumi', 'lnN')
@@ -105,7 +105,7 @@ def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}):
             pass_sample.setParamEffect(SF, 1.0 * SF)
             fail_sample.setParamEffect(SF, (1 - SF) * pass_fail + 1)
 
-    model.renderCombine('fit_{}'.format(fittype))
+    model.renderCombine(fit_dir)
 
 if __name__ == '__main__':
     import argparse
@@ -123,6 +123,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--fit", type=str, choices={'single', 'double'}, default='double',
                         help="Fit type")
+    parser.add_argument("-o", "--out", type=str, default=None,
+                        help="Fit directory")
     parser.add_argument("--scale", type=float, default='1',
                         help="Datacard magnitude for scale shift.")
     parser.add_argument("--smear", type=float, default='0.1',
@@ -140,8 +142,12 @@ if __name__ == '__main__':
     print("Running with options:")
     print("    ", args)
 
-    if not os.path.exists('fit_{}'.format(args.fit)):
-        os.mkdir('fit_{}'.format(args.fit))
+    if args.out is None:
+        fit_dir = 'fit_{}'.format(args.fit)
+    else:
+        fit_dir = args.out
+    if not os.path.exists(fit_dir):
+        os.mkdir(fit_dir)
 
     if args.fit == 'single':
         regions = ['single']
@@ -162,4 +168,5 @@ if __name__ == '__main__':
         scale=args.scale,
         smear=args.smear,
         template_dir=templates,
+        fit_dir=fit_dir,
         )
