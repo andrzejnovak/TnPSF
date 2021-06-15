@@ -41,6 +41,9 @@ class AffineMorphTemplate(object):
             shift += self.mean * (1 - scale)
         scaled_edges = (self.edges - shift) / scale
         return np.diff(self.cdf(scaled_edges)) * self.norm, self.edges
+
+    def scale(self, n):
+        self.norm = self.norm * n
      
 
 class MorphHistW2(object):
@@ -173,7 +176,7 @@ if __name__ == "__main__":
             hep.histplot(scale_down[:2], c='red' , ls='--', label='Down')
             ax.set_xlabel('jet $m_{SD}$')
             ax.legend()
-            fig.savefig('{}/{}_scale.png'.format(work_dir, template_name))
+            fig.savefig('{}/plot_{}_scale.png'.format(work_dir, template_name))
 
             fig, ax = plt.subplots()
             hep.histplot(morph_base.get()[:2], c='black' , ls=':', label='Nominal')
@@ -181,7 +184,7 @@ if __name__ == "__main__":
             hep.histplot(smear_down[:2], c='red' , ls='--', label='Down')
             ax.set_xlabel('jet $m_{SD}$')
             ax.legend()
-            fig.savefig('{}/{}_smear.png'.format(work_dir, template_name))
+            fig.savefig('{}/plot_{}_smear.png'.format(work_dir, template_name))
 
         fout[template_name] = source_file[template_name]
         fout[template_name.replace("nominal", "smearDown")] = export1d(smear_down, histtype=args.hist_type)

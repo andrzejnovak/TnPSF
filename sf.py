@@ -22,16 +22,16 @@ def get_templ(f, sample, syst=None, sumw2=True):
         return (h_vals, h_edges, h_key, h_variances)
 
 
-def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}, fit_dir=None):
+def test_sfmodel(fittype='single', scale=1, smear=0.1, template_dir={}, fit_dir=None):
     sys_scale = rl.NuisanceParameter('CMS_scale', 'shapeU')
     sys_smear = rl.NuisanceParameter('CMS_smear', 'shapeU')
     lumi = rl.NuisanceParameter('CMS_lumi', 'lnN')
     jecs = rl.NuisanceParameter('CMS_jecs', 'lnN')
     pu = rl.NuisanceParameter('CMS_pu', 'lnN')
-    effSF = rl.IndependentParameter('effSF', 1., -20, 100)
-    effSF2 = rl.IndependentParameter('effSF_un', 1., -20, 100)
-    effwSF = rl.IndependentParameter('effwSF', 1., -20, 100)
-    effwSF2 = rl.IndependentParameter('effwSF_un', 1., -20, 100)
+    effSF = rl.IndependentParameter('effSF', 1., 0, 3)
+    effSF2 = rl.IndependentParameter('effSF_un', 1., 0, 3)
+    effwSF = rl.IndependentParameter('effwSF', 1., 0, 3)
+    effwSF2 = rl.IndependentParameter('effwSF_un', 1., 0, 3)
 
     msdbins = np.linspace(40, 141.5, 30)
     msd = rl.Observable('msd', msdbins)
@@ -63,7 +63,7 @@ def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}, 
         wqq_sample.setParamEffect(lumi, 1.023)
         wqq_sample.setParamEffect(jecs, 1.02)
         wqq_sample.setParamEffect(pu, 1.05)
-        wqq_sample.autoMCStats(lnN=True)
+        wqq_sample.autoMCStats(lnN=False)
         ch.addSample(wqq_sample)
 
         qcd_templ = get_templ(template_dir[template], 'catp1_{}'.format(region), 'nominal')
@@ -71,7 +71,7 @@ def test_sfmodel(tmpdir, fittype='single', scale=1, smear=0.1, template_dir={}, 
         qcd_sample.setParamEffect(lumi, 1.023)
         qcd_sample.setParamEffect(jecs, 1.02)
         qcd_sample.setParamEffect(pu, 1.05)
-        qcd_sample.autoMCStats(lnN=True)
+        qcd_sample.autoMCStats(lnN=False)
         ch.addSample(qcd_sample)
 
         data_obs = get_templ(template_dir[template], 'data_obs_{}'.format(region), 'nominal')[:-1]
@@ -163,10 +163,19 @@ if __name__ == '__main__':
         except:
             raise ValueError("Expected a root file at", path )
 
-    test_sfmodel('fitdir', 
+    test_sfmodel(
         fittype=args.fit,
         scale=args.scale,
         smear=args.smear,
         template_dir=templates,
         fit_dir=fit_dir,
         )
+
+    # Dump config
+    conf_dict = vars(args)
+    import json
+    json.dump(conf_dict,
+              open("{}/config.json".format(fit_dir), 'w'),
+              sort_keys=True,
+              indent=4,
+              separators=(',', ': '))
