@@ -68,6 +68,14 @@ parser.add_argument('-f',
                     default='png',
                     choices={'png', 'pdf'},
                     help="Plot format")
+parser.add_argument("--scale", 
+                    default='1', 
+                    type=float, 
+                    help="Scale value.")
+parser.add_argument("--smear", 
+                    default='0.5', 
+                    type=float, 
+                    help="Smear value.")
 
 args = parser.parse_args()
 if args.output_folder.split("/")[0] != args.dir:
@@ -90,10 +98,11 @@ for pn in par_names:
     out[pn]['val'] = round(rd.Get('fit_s').floatParsFinal().find(pn).getVal(), 3)
     out[pn]['unc'] = round(rd.Get('fit_s').floatParsFinal().find(pn).getError(), 3)
 
-out['shift_SF'] = cfg['scale'] * out['CMS_scale']['val'] * 1  # (template shape)
-out['shift_SF_ERR'] = cfg['scale'] * out['CMS_scale']['unc'] * 1  # (template shape)
-out['smear_SF'] = 1 + cfg['smear'] * out['CMS_smear']['val'] * 0.5  # (template shape)
-out['smear_SF_ERR'] = cfg['smear'] * out['CMS_smear']['unc'] * 0.5 # (template shape)
+out['shift_SF'] = cfg['scale'] * out['CMS_scale']['val'] * args.scale  # (template shape)
+out['shift_SF_ERR'] = cfg['scale'] * out['CMS_scale']['unc'] * args.scale  # (template shape)
+out['smear_SF'] = 1 + cfg['smear'] * out['CMS_smear']['val'] * args.smear  # (template shape)
+out['smear_SF_ERR'] = cfg['smear'] * out['CMS_smear']['unc'] * args.smear # (template shape)
+
 if 'effSF' in out.keys():
     out['V_SF'] = out['effSF']['val']
     out['V_SF_ERR'] = out['effSF']['unc']
