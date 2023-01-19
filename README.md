@@ -1,9 +1,8 @@
 # W TagAndProbe rhalphalib implementation
 
-This version is expoected to run with the linked combine branch using python 2.7
 
 ### Setup combine and rhalphalib
-Follow official combine instruction or setup with `conda` using [this branch](https://github.com/andrzejnovak/HiggsAnalysis-CombinedLimit/tree/root6.22-compat).
+Follow official combine instruction or setup with `conda` using [this branch](https://github.com/andrzejnovak/HiggsAnalysis-CombinedLimit/tree/root6.22-compat) for python2 or `main` for python3.
 
 Setup [rhalphalib](https://github.com/nsmith-/rhalphalib) and then
 
@@ -13,22 +12,24 @@ cd TnPSF
 ```
 
 ### Generate variations 
-For each root file generate variations (only matched - catp2)
+For each root file generate variations (only matched - catp2). 
 ```bash
-python scalesmear.py -i templates/wfit_nskim17_n2/wtag_pass.root  --plot
-python scalesmear.py -i templates/wfit_nskim17_n2/wtag_fail.root  --plot
+python scalesmear.py -i templates/ref17/wtemplates_n2cvb.root  --plot
+python scalesmear.py -i templates/ref17/wtemplates_cvl.root  --plot
 ```
+
+New files will have a name convention of `<input_name>_var.root`.
 
 ### Generate combine/rhalphalib workspace and fit
 
 ```bash
-python sf.py --fit single -t templates/ref18/wtemplates_n2cvb_var.root -o FitSingle
+python sf.py --fit single -t templates/ref17/wtemplates_n2cvb_var.root -o FitSingle
 cd FitSingle
 ```
 
 or for two-cut setup:
 ```
-python sf.py --fit double -t templates/ref18/wtemplates_n2cvb_var.root --t2 templates/ref18/wtemplates_cvl_var.root -o FitDouble
+python sf.py --fit double -t templates/ref17/wtemplates_n2cvb_var.root --t2 templates/ref17/wtemplates_cvl_var.root -o FitDouble
 cd FitDouble
 ```
 and run the fit
