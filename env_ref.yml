@@ -1,0 +1,32 @@
+name: combine_compatible
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.8
+  - pandas
+  - root==6.22
+  - gsl
+  - tbb
+  - vdt
+  - boost
+  - pcre
+  - eigen
+  - pip:
+    - awkward==2.0.6
+    - awkward-cpp==7
+    - boost-histogram==1.3.2
+    - click==8.1.3
+    - contourpy==1.0.7
+    - cycler==0.11.0
+    - fonttools==4.38.0
+    - hist==2.6.3
+    - histoprint==2.4.0
+    - kiwisolver==1.4.4
+    - matplotlib==3.6.3
+    - mplhep==0.3.26
+    - mplhep-data==0.0.3
+    - pillow==9.4.0
+    - pyparsing==3.0.9
+    - uhi==0.3.3
+    - uproot==5.0.2
