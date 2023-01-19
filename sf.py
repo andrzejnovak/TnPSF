@@ -12,9 +12,9 @@ def get_templ(f, sample, syst=None, sumw2=True):
     hist_name = sample
     if syst is not None:
         hist_name += "_" + syst
-    h_vals = f[hist_name].values
-    h_edges = f[hist_name].edges
-    h_variances = f[hist_name].variances
+    h_vals = f[hist_name].values()
+    h_edges = f[hist_name].axes[0].edges()
+    h_variances = f[hist_name].variances()
     h_key = 'msd'
     if not sumw2:
         return (h_vals, h_edges, h_key)
