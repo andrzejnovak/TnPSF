@@ -1,5 +1,7 @@
 # W TagAndProbe rhalphalib implementation
 
+This version is expoected to run with the linked combine branch using python 2.7
+
 ### Setup combine and rhalphalib
 Follow official combine instruction or setup with `conda` using [this branch](https://github.com/andrzejnovak/HiggsAnalysis-CombinedLimit/tree/root6.22-compat).
 
